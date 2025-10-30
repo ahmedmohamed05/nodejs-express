@@ -1,515 +1,890 @@
-# Express
+# Nodejs
 
-express: is a framework for nodejs to deal with the web
+Content Table
 
-Express is an unopinionated framework
+- [Modeling System](#change-importexport-type)
+- [HTTP Server](#create-http-server)
+- [Status Codes](#status-code)
+- [NPM Scripts](#edit-npm-scripts)
+- [.env File](#env-file)
+- [Request Object](#request-object)
+- [Load Files (fs)](#load-files)
+- [JSON](#json)
+- [middleware](#middleware)
 
-| Opinionated                            | UnOpinionated                       |
-| -------------------------------------- | ----------------------------------- |
-| Suggested ways to do things            | Different ways to do the same thing |
-| usually offer a lot of bells & whistle | Include the bare necessities        |
-| Strict folder structure                | Struct folders how you want         |
-| Features                               | Freedom                             |
-
----
-
-## Content Table
-
-- [Basics](#basics)
-- [Sending files](#send-files)
-
----
-
-## Basics
-
-To install express
+Init the project with **_package.json_** file for project configuration
 
 ```npm
-npm install express
+npm init -y
 ```
 
-Now create a JS file called **_server.js_** for example
-
-Now lets require **_Express_** inside our application with this line
-
-```js
-const express = require("express");
-```
-
-To create an **_Express_** app we need to initiate **_Express_** with this line
-
-```js
-const app = express();
-```
-
-the **app** variable is our core application we can do anything from it
-
-**_Express_** makes the dealing with the request methods much easier because we can just say something like
-
-```js
-app.get("/", (req, res) => {
-	res.send("Hello, world!!!");
-});
-```
-
-And we don't even need to specify the **Content-Type** it will know it automatically
-
-```js
-app.get("/", (req, res) => {
-	res.send({ msg: "Hello, World!!!" });
-});
-```
-
-Also it will stringify JS or JSON objects automatically
-
-There is a specific json function
-
-```js
-let posts = [
-	{ id: 1, title: "Post One" },
-	{ id: 2, title: "Post Two" },
-	{ id: 3, title: "Post Three" },
-];
-
-app.get("/api/posts", (req, res) => {
-	res.json(posts);
-});
-```
-
-To run our server and watch it use this command
-
-```command line
-node --watch server.js
-```
-
-We can created as many routs as we want this easily
-
-```js
-app.get("/about", (req, res) => {
-	res.send("We are offering awesome servers");
-});
-```
-
-This route means GET from /about
+this will crate a **_package.json_** file contains all the necessary information to build your project
 
 ---
 
-## Send Files
+## Change Import/Export type
 
-We can send file with **_sendFile_** method
+in **_package.json_** you can change the type of module system **_commonjs_** which uses `require, export` keywords or **_module_** uses `import, export`
 
-```js
-const path = require("path");
-```
+inside the **_package.json_** file type
 
-We can use the **path** package to help us doing this
-
-```js
-app.get("/", (req, res) => {
-	res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
-app.get("/about", (req, res) => {
-	res.sendFile(path.join(__dirname, "public", "about.html"));
-});
+```json
+"type": [commonjs or module]
 ```
 
 ---
 
-## Static Server
+## Create HTTP server
 
-Now this way of sending files might work if we have a little number of pages but imagine if we have a lot of files and pages
-
-To avoid repeating we can use the static files
-
-we can remove our two routes and use this line instead
+to create HTTP server first we need to import the http library from the node environment (comes with it by default)
 
 ```js
-app.use(express.static(path.join(__dirname, "public")));
+import http from "http"; // Module
+const http = require("http"); // Commonjs
 ```
 
-**app.use** runs the middlewares
+Now to create a server
 
-> Keep in mind you have to type file extension in the URL i.e. (http://localhost:8000/about.html)
+```js
+const server = http.createServer((req, res) => {});
+```
+
+**req**: Request object for authentication and other stuff
+**res**: Response for the client
+
+Ex: Response with hello world
+
+```js
+const server = http.createServer((req, res) => {
+	res.write("Hello, World !!!");
+	res.end();
+});
+```
+
+**write**: used to write text to the response
+
+**end**: Ends the response and return it to the client
+
+Now we have to create a listener for any one connect to our server
+
+```js
+const PORT = 8000;
+server.listen(PORT, () => {
+	console.log(`server running on port ${PORT}`);
+});
+```
+
+Now our code will look like this
+
+```js
+import http from "http";
+
+const PORT = 8000;
+
+const server = http.createServer((req, res) => {
+	res.write("Hello, World !!!");
+	res.end();
+});
+
+server.listen(PORT, () => {
+	console.log(`server running on port ${PORT}`);
+});
+```
+
+if our response is simple we can return it immediately within the **end** method
+
+```js
+const server = http.createServer((req, res) => {
+	res.end("Hello, World !!!");
+});
+```
+
+we can set header values to tell the brows how to handle/display our response such as html
+
+```js
+const server = http.createServer((req, res) => {
+	res.setHeader("Content-Type", "text/html"); //renders html
+	res.end("<h1>Hello, World !!!</h1>");
+});
+```
+
+```js
+const server = http.createServer((req, res) => {
+	res.setHeader("Content-Type", "text/plain"); //renders plain text including the tags
+	res.end("<h1>Hello, World !!!</h1>");
+});
+```
 
 ---
 
-## Dynamic Routes
+## Status Code
 
-Lets say we want a specific post
+Status code: Number indicate the status of the request asks, if the request contains pages not found we might want to response with status code $404$
 
-the endpoint in our code will be like this
+Or if everything is fine the status code will be $200$
 
-```js
-app.get("/api/posts/:id", (req, res) => {});
-```
-
-Were we say that the **id** is dynamic by putting a colon in front of it
-
-we can access the **id** variable from the **req.params** and we will get all the params as strings
+Ex: Return status code of 404
 
 ```js
-app.get("/api/posts/:id", (req, res) => {
-	const id = parseInt(req.params.id);
-	const post = posts.find((p) => p.id === id);
-	if (post) res.json(post);
-	res.send({ msg: "post not found" });
+import http from "http";
+
+const PORT = 8000;
+
+const server = http.createServer((req, res) => {
+	res.setHeader("Content-Type", "text/html");
+	res.statusCode = 404;
+
+	res.end("<h1>Hello, World !!!</h1>");
+});
+
+server.listen(PORT, () => {
+	console.log(`server running on port ${PORT}`);
 });
 ```
 
-Now you might want to access url queries
-URL: localhost:8000/api/posts?limit=3
-if we want to access the limit variable we can so using the **query** object inside the **req**
+Open the console and will see an error saying **404 not found**
 
-Ex: Get a certain number of posts
+We can use the **writeHead** method to write head in one line
 
 ```js
-// Get posts
-app.get("/api/posts", (req, res) => {
-	const limit = parseInt(req.query.limit) || posts.length;
-	// We should return to stop executing and re-send the data again which will cause an error
-	if (limit && limit > 0) return res.status(200).json(posts.slice(0, limit));
-	res.json(posts);
+const server = http.createServer((req, res) => {
+	res.writeHead(500, { "Content-Type": "application/json" }); // 500 = internal server error
+	res.end(JSON.stringify({ msg: "Error" }));
 });
-```
-
-> This customer data send from the user may be sometime very dangerous like sql injection or something crashes the server, so you need to verify the data and queries
-
-to specify status codes, we can chain methods
-
-```js
-res.status(200).send("Every thing is ok");
 ```
 
 ---
 
-## Separate Routes File
+## Edit NPM scripts
 
-create a **routes** directory and a **posts.js** file in it to start using **_Express_** router
+We can edit npm scripts to do certain things to avoid repeating, Open **_package.json_** you will see a script key with a scripts strings and each script has a name
 
-```js
-// posts.js
-const express = require("express");
-const router = express.Router(); // create the router
+to run the script write
 
-let posts = [
-	{ id: 1, title: "Post One" },
-	{ id: 2, title: "Post Two" },
-	{ id: 3, title: "Post Three" },
-];
-
-router.get("/", (req, res) => {
-	const limit = parseInt(req.query.limit) || posts.length;
-	if (limit && limit > 0) return res.status(200).json(posts.slice(0, limit));
-	res.json(posts);
-});
-
-router.get("/:id", (req, res) => {
-	const id = parseInt(req.params.id);
-	const post = posts.find((p) => p.id === id);
-	if (post) return res.status(200).json(post);
-	res.status(404).send({ msg: "post not found" });
-});
-
-module.exports = router;
-```
-
-Since this route is specific for the "/api/posts" endpoint we don't need to say this inside the methods, because we will get this from the **server.js** file
-
-```js
-// server.js
-const express = require("express");
-const posts = require("./routes/posts");
-
-const PORT = process.env.PORT || 8080;
-const app = express();
-
-app.use("/api/posts", posts);
-
-app.listen(PORT, () => console.log(`server running at ${PORT}`));
-```
-
-This should still works the same
-
----
-
-## Read data from request
-
-To read json data from the request we need to add a middleware
-
-```js
-app.use(express.json());
-```
-
-To read url encoded data we need to add another line
-
-```js
-app.use(express.urlencoded());
-```
-
-Now to access the values send with the request we will found them inside the body
-
-```js
-console.log(req.body);
-```
-
-Ex: add a new post
-
-```js
-// Add new post
-router.post("/", (req, res) => {
-	if (!req.body) return res.status(400).json({ msg: "what a stupid request" });
-
-	const title = req.body.title;
-	if (!title) return res.status(400).json({ msg: "Post must have a title" });
-
-	const post = {
-		id: posts.length + 1,
-		title,
-	};
-	posts.push(post);
-	res.status(201).json(posts);
-});
-```
-
-Ex: editing posts
-
-```js
-router.put("/:id", (req, res) => {
-	const id = parseInt(req.params.id);
-	const postIndex = posts.findIndex((p) => p.id === id);
-	const post = posts[postIndex];
-	if (!post) return res.status(404).json({ msg: "Post not found" });
-
-	if (!req.body)
-		return res.status(400).json({ msg: "Provide the needed data" });
-	const title = req.body.title;
-	if (!title) return res.status(400).json({ msg: "Post must have a title" });
-
-	const newPost = { ...post, title };
-	posts[postIndex] = newPost;
-	res.status(200).json(newPost);
-});
-```
-
-Ex: delete a post
-
-```js
-router.delete("/:id", (req, res) => {
-	const id = parseInt(req.params.id);
-	const postIndex = posts.findIndex((p) => p.id === id);
-	if (postIndex === -1) return res.status(404).json({ msg: "Post not found" });
-	const post = posts[postIndex];
-
-	posts.splice(postIndex, 1);
-	res.status(200).json(posts);
-});
-```
-
-## Middleware
-
-To implement middlewares on the router level we can do that
-
-Basic syntax
-
-```js
-app.[method]([endpoint], [middleware], [request handler]);
+```npm
+npm run [script-name]
 ```
 
 Ex:
 
-```js
-const logger = (req, res, next) => {
-	console.log(
-		`${req.method} ${req.protocol}://${req.get("host")}${req.originalUrl}`
-	);
-	next();
-};
-
-router.get("/", logger, getAllPosts);
+```npm
+npm run start
 ```
 
-To use it inside the **server.js** file we can do this
+We can add our own scripts of course
 
-```js
-app.use(logger); // Hit's every endpoint
-// OR
-app.use("/api/posts", logger, posts);
-// OR
-app.use("/api/posts", logger);
-app.use("/api/posts", posts);
-```
-
----
-
-## Error handling
-
-First we need to create an error and throw it to the middleware error handler
-
-we need to accept the **_next_** function inside our request handlers
-
-```js
-app.get("/", (req, res, next) => {...});
-```
-
-to create and throw an error do like this
-
-```js
-const err = new Error("post not found");
-return next(err);
-```
-
-Now lets create our handler inside the middle ware directory
-
-```js
-// error-handler.js
-const errorHandler = (err, req, res, next) => {
-	res.status(err.status || 501).json({ msg: err.message });
-};
-export default errorHandler;
-```
-
-Now we can use it like every other middleware just by wrapping it with the **use**
-
-```js
-app.use("/api/posts", errorHandler);
-```
-
-We can add dynamic status codes
-
-```js
-const err = new Error("post not found");
-err.status = 404;
-return next(err);
-```
-
-we will throw the error like this
-
-Now we need to update our error handler
-
-```js
-const errorHandler = (err, req, res, next) => {
-	res.status(err.status || 501).json({ msg: err.message });
-};
-export default errorHandler;
-```
-
-To catch all errors i.e. undefined endpoints
-
-```js
-app.use((req, res, next) => {
-	const err = new Error("Page Not Found");
-	err.status = 404;
-	next(err);
-});
-```
-
-> Make sure the errorHandler function is have the same endpoint as the catch all endpoint
-
-it's better to create a separated file for this of course
-
-```js
-// not-found.js
-
-const notFoundHandler = (req, res, next) => {
-	const err = new Error("Page Not Found");
-	err.status = 404;
-	next(err);
-};
-export default notFoundHandler;
-```
-
-And we can just use it with our app as any other middleware
-
-```js
-app.use(notFoundHandler);
-```
-
----
-
-## Colors for the console
-
-we will use a package called **colors** to add colors for the console
-
-First install it with NPM
+We will add an npm package to restart our server each time we make a change called **_nodemon_**
 
 ```npm
-npm i colors
+npm i -D nodemon
 ```
 
-Basic syntax
+**_-D_** flat means that this package is only needed for development and not production
 
-```js
-console.log([msg].[style1].[style2].[styleN]);
+After running the command two things changed
+
+1. **node_modules**: This directory contains all our modules needed to run our project, No need to copy this big directory everywhere because you can install the needed modules if you have the **_package.json_** file
+
+2. **package-lock.json**: Contains our dependencies information
+
+3. **package.json**: see new object crated **devDependencies**
+
+> we can install the node_modules directory just by running
+
+```npm
+npm install
 ```
 
-ex: make the msg green
+> You might want to ignore the directory inside your **_.gitignore_** file
+
+Now after installing **_nodemon_** we can edit our start script to this
+
+```json
+"start": "nodemon [server-file-name.js]"
+```
+
+Ex:
+
+```json
+"scripts": {
+  "start": "nodemon index.js",
+  "test": "node ."
+},
+```
+
+---
+
+## env File
+
+With new nodejs versions you don't need to install a packages to use .env variables
+
+But you have to add **_--env-file=[file-path]_** to the running command
+
+Ex:
+
+```json
+"start": "nodemon --env-file=.env index.js",
+```
+
+We can access env variables using the process object
 
 ```js
-import "colors";
-const logger = (req, res, next) => {
-	console.log(
-		`${req.method} ${req.protocol}://${req.get("host")}${req.originalUrl}`.green
-	);
-	next();
+const PORT = process.env.PORT;
+```
+
+---
+
+## Request Object
+
+```js
+const server = http.createServer((req, res) => {
+	console.log(req.url); // Get Client's url
+	console.log(req.method); // Request type, GET by default
+
+	res.writeHead(200, { "Content-Type": "text/html" });
+	res.end(`<h1>Hello, World !!!</h1>`);
+});
+```
+
+Based on the data from url for routing and method for action type we can handle many requests
+
+Ex: Load different pages based on the rout
+
+```js
+const server = http.createServer((req, res) => {
+	const url = req.url;
+	if (url === "/") {
+		res.writeHead(200, { "Content-Type": "text/html" });
+		res.end(`<h1>Homepage</h1>`);
+	} else if (url === "/users") {
+		res.writeHead(200, { "Content-Type": "text/html" });
+		res.end(`<h1>Users</h1>`);
+	} else {
+		res.writeHead(404, { "Content-Type": "text/html" });
+		res.end(`<h1>Not Found</h1>`);
+	}
+});
+```
+
+But the problem with this code it will always return data even if the request was a POST request (adding data)
+
+we can use _Try/Catch_ to handle this
+
+```js
+const server = http.createServer((req, res) => {
+	const url = req.url;
+	const method = req.method;
+
+	try {
+		if (method === "GET") {
+			if (url === "/") {
+				res.writeHead(200, { "Content-Type": "text/html" });
+				res.end(`<h1>Homepage</h1>`);
+			} else if (url === "/users") {
+				res.writeHead(200, { "Content-Type": "text/html" });
+				res.end(`<h1>Users</h1>`);
+			} else {
+				res.writeHead(404, { "Content-Type": "text/html" });
+				res.end(`<h1>Not Found</h1>`);
+			}
+		} else throw new Error("Method Not allows");
+	} catch (error) {
+		res.writeHead(500, { "Content-Type": "text/plain" });
+		res.end("Server Error");
+	}
+});
+```
+
+---
+
+## Load Files
+
+First we need to import the fs library, the promises versions
+
+```js
+import fs from "fs/promises";
+```
+
+Now to get current file path
+
+If you are not using es-module you have to variables **_\_\_filename, \_\_dirname_** you can use
+
+but if you are using es-module, you might need to write more code
+
+1. You need to import **_url, path_** libraries
+2. Get filename
+
+```js
+const __filename = url.fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+```
+
+Now there is a new way to get the same results with nodejs <=20.11+
+
+you can simply write
+
+```js
+const __filename = import.meta.filename;
+const __dirname = import.meta.dirname;
+```
+
+Ex: return html pages
+
+> Since we will work with promises we should change our function to asynchronous
+
+1:
+
+```js
+const server = http.createServer(async (req, res) => {...});
+```
+
+2: Create index.html, about.html, and not-found.html files inside the public directory
+
+3: make this changes to the function
+
+```js
+const server = http.createServer(async (req, res) => {
+	const url = req.url;
+	const method = req.method;
+	try {
+		if (method === "GET") {
+			let filePath;
+			if (url === "/") {
+				filePath = path.join(__dirname, "public", "index.html");
+			} else if (url === "/about") {
+				filePath = path.join(__dirname, "public", "about.html");
+			} else {
+				filePath = path.join(__dirname, "public", "not-found.html");
+			}
+
+			const data = await fs.readFile(filePath);
+			res.setHeader("Content-Type", "text/html");
+			res.end(data);
+		} else throw new Error("Method Not allows");
+	} catch (error) {
+		res.writeHead(500, { "Content-Type": "text/plain" });
+		res.end("Server Error");
+	}
+});
+```
+
+---
+
+## JSON
+
+Ex: Return todos
+
+> This todos are hardcoded, In real-world project they will come from DB
+
+```js
+import { createServer } from "http";
+
+const TODOS = [
+	{ id: 1, todo: "Throw the trash", status: false },
+	{ id: 2, todo: "Do homework", status: true },
+	{ id: 3, todo: "Bullying my sisters", status: true },
+];
+
+const server = createServer((req, res) => {
+	if (req.method === "GET" && req.url === "/api/todos") {
+		res.setHeader("Content-Type", "application/json");
+		res.write(JSON.stringify(TODOS));
+		res.end();
+	} else {
+		res.setHeader("Content-Type", "application/json");
+		req.statusCode = 404;
+		res.write(JSON.stringify({ msg: "Route not found" }));
+		res.end();
+	}
+});
+```
+
+Ex: Get specific todo with it's id
+
+```js
+const TODOS = [
+	{ id: 1, todo: "Throw the trash", status: false },
+	{ id: 2, todo: "Do homework", status: true },
+	{ id: 3, todo: "Bullying my sisters", status: true },
+];
+
+const server = createServer((req, res) => {
+	res.setHeader("Content-Type", "application/json");
+
+	// Get all todos
+	if (req.method === "GET" && req.url === "/api/todos") {
+		res.write(JSON.stringify(TODOS));
+		res.end();
+		return; // Early return - no else needed!
+	}
+
+	// Get single todo
+	if (req.method === "GET" && req.url.match(/\/api\/todos\/([0-9]+)/)) {
+		const id = parseInt(req.url.split("/")[3]);
+		const todo = TODOS.find((todo) => todo.id === id);
+
+		if (todo) {
+			res.write(JSON.stringify(todo));
+			res.end();
+			return;
+		}
+
+		res.statusCode = 404;
+		res.write(JSON.stringify({ msg: "Todo not found" }));
+		res.end();
+		return;
+	}
+
+	// Default 404
+	res.statusCode = 404;
+	res.write(JSON.stringify({ msg: "Route not found" }));
+	res.end();
+});
+```
+
+---
+
+## Middleware
+
+Functions runs in the middle of a request lets you edit the headers of the request, authentication stuff for example
+
+Ex: create a logger function to record each time a todo requested
+
+```js
+const logger = async (req, res, next) => {
+	try {
+		const { method, url } = req;
+		const content = `Method: ${method}, URL: ${url}\n`;
+		await fs.writeFile(
+			path.join(import.meta.dirname, "logs", "todos.txt"),
+			content,
+			{ flag: "a+" } // flag to append to the file
+		);
+		next();
+	} catch (error) {
+		throw new Error(error);
+	}
 };
-export default logger;
 ```
 
-see styles here [colors](https://www.npmjs.com/package/colors)
+Since this is a middleware we have to call the next function
 
-Now to take this further we can map each method with its own color
+Also we need to wrap our server initial function inside a function
 
 ```js
-colors.setTheme({
-	GET: "green",
-	POST: "blue",
-	PUT: "yellow",
-	DELETE: "red",
+const server = createServer((req, res) => {
+	logger(req, res, () => {
+		// when we call the 'next' function this code will execute
+		res.setHeader("Content-Type", "application/json");
+
+		// Get all todos
+		if (req.method === "GET" && req.url === "/api/todos") {
+			res.write(JSON.stringify(TODOS));
+			res.end();
+			return; // Early return - no else needed!
+		}
+
+		// Get single todo
+		if (req.method === "GET" && req.url.match(/\/api\/todos\/([0-9]+)/)) {
+			const id = parseInt(req.url.split("/")[3]);
+			const todo = TODOS.find((todo) => todo.id === id);
+
+			if (todo) {
+				res.write(JSON.stringify(todo));
+				res.end();
+				return;
+			}
+
+			res.statusCode = 404;
+			res.write(JSON.stringify({ msg: "Todo not found" }));
+			res.end();
+			return;
+		}
+
+		// Default 404
+		res.statusCode = 404;
+		res.write(JSON.stringify({ msg: "Route not found" }));
+		res.end();
+	});
+});
+```
+
+---
+
+## POST data
+
+First let's clean up our code (it will be easier if we use express)
+
+```js
+const getAllTodos = (req, res) => {
+	res.write(JSON.stringify(TODOS));
+	res.end();
+};
+
+const getTodoById = (req, res) => {
+	const id = parseInt(req.url.split("/")[3]);
+	const todo = TODOS.find((todo) => todo.id === id);
+
+	if (todo) {
+		res.write(JSON.stringify(todo));
+		res.end();
+		return;
+	}
+
+	res.statusCode = 404;
+	res.write(JSON.stringify({ msg: "Todo not found" }));
+	res.end();
+};
+
+const server = createServer((req, res) => {
+	logger(req, res, () => {
+		res.setHeader("Content-Type", "application/json");
+
+		// Get all todos
+		if (req.method === "GET" && req.url === "/api/todos") {
+			getAllTodos(req, res);
+			return;
+		}
+
+		if (req.method === "GET" && req.url.match(/\/api\/todos\/([0-9]+)/)) {
+			getTodoById(req, res);
+			return;
+		}
+
+		// Default 404
+		res.statusCode = 404;
+		res.write(JSON.stringify({ msg: "Route not found" }));
+		res.end();
+	});
+});
+```
+
+---
+
+## Files (FS)
+
+We already used it a little
+
+Ex: read the log file
+
+```js
+import fs from "fs";
+
+fs.readFile("./logs/todos.txt", "utf8", (err, data) => {
+	if (err) throw err;
+	console.log(data);
+});
+```
+
+Now the above example is the asynchronisms versions which will not block your code, it will execute the callback function once the file has read
+
+```js
+const data = fs.readFileSync("./logs/todos.txt", "utf8");
+console.log(data);
+```
+
+This code will stop running the rest until finishing reading the file
+
+There is a promise version of the **_fs_** library, where you can use the .then or async/await
+
+```js
+fs.readFile(LOG_FILE_PATH, "utf8")
+	.then((data) => console.log(data))
+	.catch((err) => console.log(err));
+```
+
+```js
+const readFile = async () => {
+	try {
+		const data = await fs.readFile(LOG_FILE_PATH, "utf8");
+		console.log(data);
+	} catch (error) {
+		console.error(error);
+	}
+};
+
+readFile();
+```
+
+Now this is the 4 different ways to use almost all the methods inside the fs library
+
+Writing to file
+
+```js
+const writeFile = async () => {
+	try {
+		await fs.writeFile("./test.txt", "Hello, World");
+	} catch (error) {
+		console.error(error);
+	}
+};
+
+writeFile();
+```
+
+**_writeFile_** will create the file if not exists
+
+## More about path module
+
+Gives you the ability to work with filepaths (doesn't matter if the path exists or not)
+
+```js
+import path from "path";
+const filepath = "./dir1/dir2/main.cpp";
+```
+
+this filepath we will work with
+
+1: basename: Gives the last path name
+
+```js
+console.log(path.basename(filepath)); // main.cpp
+```
+
+2: dirname: path without the filepath
+
+```js
+console.log(path.dirname(filepath)); // ./dir1/dir2
+```
+
+3: extname: file extension
+
+```js
+console.log(path.extname(filepath)); // .cpp
+```
+
+4: parse: parse the path and returns an object
+
+```js
+console.log(path.parse(filepath));
+```
+
+```json
+{
+	"root": "",
+	"dir": "./dir1/dir2",
+	"base": "main.cpp",
+	"ext": ".cpp",
+	"name": "main"
+}
+```
+
+---
+
+## Os module
+
+importing
+
+```js
+import os from "os";
+```
+
+1: userInfo: Returns an object with the username uid, gid, homedir and shell type
+
+```js
+console.log(os.userInfo());
+```
+
+2: totalmem: Returns total memory in bytes
+
+```js
+console.log(os.totalmem());
+```
+
+3: freemem: Returns free memory in bytes
+
+```js
+console.log(os.freemem());
+```
+
+4: cpus: Returns an array of object for every core on the system
+
+```js
+console.log(os.cpus());
+```
+
+---
+
+## URL module
+
+Importing the url module
+
+```js
+import url from "url";
+```
+
+create example url
+
+```js
+const ex = "https://duckduckgo.com/?q=hello+world";
+```
+
+1: new url: get an object contain information about the url
+
+```js
+const urlObject = new URL(ex);
+
+console.log(urlObject);
+```
+
+2: format: get url string from an object
+
+```js
+console.log(url.format(urlObject));
+```
+
+3: import.meta.url: get the url of the file
+
+```js
+console.log(import.meta.url);
+```
+
+4: get url params
+
+```js
+const params = new URLSearchParams(urlObject.search); // Returns a map
+console.log(params.get("q"));
+```
+
+---
+
+## Crypto
+
+importing
+
+```js
+import crypto from "crypto";
+```
+
+```js
+const hash = crypto.createHash("sha256");
+hash.update("ahmed");
+console.log(hash.digest("hex"));
+```
+
+to create random hashes
+
+```js
+crypto.randomBytes(16, (err, buf) => {
+	if (err) throw err;
+	console.log(buf.toString("hex"));
+});
+```
+
+Encrypt
+
+```js
+const ALGORITHM = "aes-256-cbc";
+const KEY = crypto.randomBytes(32);
+const IV = crypto.randomBytes(16);
+
+const cipher = crypto.createCipheriv(ALGORITHM, KEY, IV);
+let encrypted = cipher.update("Hello Please encrypt this", "utf8", "hex");
+encrypted += cipher.final("hex");
+console.log(encrypted);
+```
+
+Decrypting
+
+```js
+const decipher = crypto.createDecipheriv(ALGORITHM, KEY, IV);
+let decrypted = decipher.update(encrypted, "hex", "utf8");
+decrypted += decipher.final("utf8");
+console.log(decrypted);
+```
+
+---
+
+## Events
+
+Great for real-time applications because you can create events and listen to them inside you front-end app
+
+importing
+
+```js
+import { EventEmitter } from "events";
+```
+
+Ex: simple emitter
+
+```js
+import { EventEmitter } from "events";
+
+const emitter = new EventEmitter();
+
+function initializer(user) {
+	console.log("initial");
+}
+
+function finalizer() {
+	console.log("final");
+}
+
+emitter.on("initialize", initializer);
+emitter.on("finalize", finalizer);
+
+emitter.emit("initialize");
+emitter.emit("finalize");
+```
+
+We can send arguments
+
+```js
+import { EventEmitter } from "events";
+
+const emitter = new EventEmitter();
+
+function initializer(username) {
+	console.log("initial user: " + username);
+}
+
+function finalizer(username) {
+	console.log("exiting, " + username);
+}
+
+emitter.on("initialize", initializer);
+emitter.on("finalize", finalizer);
+
+emitter.emit("initialize", "ahmed");
+emitter.emit("finalize", "ahmed");
+```
+
+We can handle errors
+
+```js
+emitter.on("error", (err) => {
+	console.error("Error occurred: " + err);
 });
 
-console.log(
-	`${method} ${req.protocol}://${req.get("host")}${req.originalUrl}`[method]
-);
+emitter.emit("error", new Error("Simulating"));
 ```
 
 ---
 
-## Encapsulate logic
+## Process
 
-Let us extract some of the code from the posts router to it's own file logic, create a **controller** directory
+Process object has an argv array which contain the path for the node, and for the file runs, we can access any other arguments passed from the command line from this array
 
-Just copy the functions to separate file for example **controller.js**:
+process.env gives you a lot of information about the environment that it's running on
+
+We can exit the program with status code
 
 ```js
-import express from "express";
-import {
-	addPost,
-	deletePost,
-	getPost,
-	getPosts,
-	updatePost,
-} from "../controllers/post-controller.js";
+process.exit(0);
 
-const router = express.Router();
-
-router.get("/", getPosts);
-
-// Get post by id
-router.get("/:id", getPost);
-
-// Add new post
-router.post("/", addPost);
-
-router.put("/:id", updatePost);
-
-router.delete("/:id", deletePost);
-
-export default router;
+// This will never execute
+console.log("exit successfully");
 ```
 
----
+we can listen to events, exit event for example
 
-## Create some request form the frontend
+```js
+process.on("exit", (code) => {
+	console.log(`program exit with status code of ${code}`);
+});
 
-inside the **index.html** let's create a button for fetching posts
+process.exit(0);
+
+// This will never execute
+console.log("exit successfully");
+```
